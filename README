@@ -1,0 +1,21 @@
+To use, first deploy the WAR to your webapps:
+
+var imgName = "none";
+function saveScreenshot()
+{
+  	var weave = document.getElementById('weave');
+  	var image = weave.evaluateExpression(['SPT'], 'getBase64Image(this)', null, ['weave.utils.BitmapUtils']);
+  	$.ajax({
+  			data: image,
+			url: "/ImageService/Base64ImageService",
+			type: "POST",
+			dataType: "text",
+			success: function( data, textStatus, jqXHR ) {
+				imgName = data;
+				imgTag.src = "/ImageService/Base64ImageService?file=" + imgName;
+			},
+			error: function (qXHR, textStatus, errorThrown) {
+				
+			}
+		});
+}
