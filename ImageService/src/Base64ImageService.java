@@ -55,21 +55,26 @@ public class Base64ImageService extends HttpServlet
 	
 	/**
 	 * @param request A request which has the name of a file provided in the URL parameters.
-	 * @param response The Base64 encoded string of the image.
+	 * @param response The binary of the image.
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
 	{
+		response.setContentType("image/png");
 		try
 		{
 			String fileName = request.getParameter("file");
-			File tempFile = new File(fileName);
-			fileName = tempFile.getName();
-			FileInputStream fileInStream = new FileInputStream(tempImagePath + "/" + fileName);
+			File tempFile = new File(tempImagePath + "/" + new File(fileName).getName());
+			FileInputStream fileInStream = new FileInputStream(tempFile);
 			ServletOutputStream outStream = response.getOutputStream();
 			
-			BASE64Encoder encoder = new BASE64Encoder();
-			response.setContentType("image/png");
-			encoder.encodeBuffer(fileInStream, outStream);
+			int length = (int)tempFile.length();
+			byte[] bytes = new byte[length];
+			System.out.println(bytes.length);
+			fileInStream.read(bytes);
+			outStream.write(bytes);
+//			BASE64Encoder encoder = new BASE64Encoder();
+
+//			encoder.encodeBuffer(fileInStream, outStream);
 			fileInStream.close();
 		}
 		catch (Exception e)
