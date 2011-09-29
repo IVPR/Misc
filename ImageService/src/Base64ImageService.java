@@ -34,7 +34,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import sun.misc.BASE64Decoder;
-import sun.misc.BASE64Encoder;
 
 /**
  * @author kmonico
@@ -69,12 +68,8 @@ public class Base64ImageService extends HttpServlet
 			
 			int length = (int)tempFile.length();
 			byte[] bytes = new byte[length];
-			System.out.println(bytes.length);
 			fileInStream.read(bytes);
 			outStream.write(bytes);
-//			BASE64Encoder encoder = new BASE64Encoder();
-
-//			encoder.encodeBuffer(fileInStream, outStream);
 			fileInStream.close();
 		}
 		catch (Exception e)
