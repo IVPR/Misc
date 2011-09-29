@@ -1,4 +1,6 @@
-To use, first deploy the WAR to your webapps:
+To use, first deploy the WAR (locating in ImageService/bin directory) to your webapps directory.
+
+An example JavaScript function using jQuery.
 
 var imgName = "none";
 function saveScreenshot()
