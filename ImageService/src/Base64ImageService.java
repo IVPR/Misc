@@ -48,10 +48,10 @@ public class Base64ImageService extends HttpServlet
 		super.init(config);
 		
 		ServletContext context = config.getServletContext();
-		tempImagePath = context.getRealPath(context.getInitParameter("tempImagePath")).replace('\\', '/');
+		infomapImagePath = context.getRealPath(context.getInitParameter("infomapImagePath")).replace('\\', '/');
 	}
 
-	private String tempImagePath = "";
+	private String infomapImagePath = "";
 	
 	/**
 	 * @param request A request which has the name of a file provided in the URL parameters.
@@ -63,7 +63,7 @@ public class Base64ImageService extends HttpServlet
 		try
 		{
 			String fileName = request.getParameter("file");
-			File tempFile = new File(tempImagePath + "/" + new File(fileName).getName());
+			File tempFile = new File(infomapImagePath + "/" + new File(fileName).getName());
 			FileInputStream fileInStream = new FileInputStream(tempFile);
 			ServletOutputStream outStream = response.getOutputStream();
 			
@@ -91,12 +91,11 @@ public class Base64ImageService extends HttpServlet
 	{
 		try
 		{
-			UUID rand = UUID.randomUUID();
-			String fileName = rand.toString() + ".png";
+			String fileName = new File(request.getRequestURI().toString()).getName() + ".png";
 			
 			// get the file name and write it to the response
 			byte[] bytes = fileName.getBytes();
-			OutputStream fileOutStream = new FileOutputStream(tempImagePath + "/" + fileName);
+			OutputStream fileOutStream = new FileOutputStream(infomapImagePath + "/" + fileName);
 			response.getOutputStream().write(bytes);
 
 			// decode the input stream and write to file

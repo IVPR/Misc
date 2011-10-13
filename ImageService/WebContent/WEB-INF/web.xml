@@ -15,13 +15,18 @@
     <param-value>../weave-config/temp</param-value>
   </context-param>
   
+  <context-param>
+    <param-name>infomapImagePath</param-name>
+    <param-value>../ROOT/infomap_images</param-value>
+  </context-param>
+  
    <servlet>
     <servlet-name>Base64ImageService</servlet-name>
     <servlet-class>Base64ImageService</servlet-class>
   </servlet>
   <servlet-mapping>
     <servlet-name>Base64ImageService</servlet-name>
-    <url-pattern>/Base64ImageService</url-pattern>
+    <url-pattern>/Base64ImageService/*</url-pattern>
   </servlet-mapping>
   
 </web-app>
