@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" minWidth="955" minHeight="600"
+			   pageTitle="Header Tool">
+	<s:VGroup width="100%" height="100%" paddingLeft="{p}" paddingRight="{p}" paddingTop="{p}" paddingBottom="{p}">
+		<s:Label text="Paste the header rows you want to combine."/>
+		<s:TextArea width="100%" height="100%" id="acsInput" change="mergeHeaderRows()"/>
+		<s:HGroup>
+			<s:Label text="Separator used when merging header rows:"/>
+			<s:TextInput id="acsSeparator" text=" - " change="mergeHeaderRows()"/>
+		</s:HGroup>
+		<s:HGroup>
+			<s:Label text="Merged header rows:"/>
+			<s:Spacer width="100%"/>
+			<s:Button label="Copy to clipboard" click="Clipboard.generalClipboard.setData(ClipboardFormats.TEXT_FORMAT, acsOutput.text);"/>
+		</s:HGroup>
+		<s:TextArea width="100%" height="100%" id="acsOutput"/>
+	</s:VGroup>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import flash.desktop.Clipboard;
+			import flash.desktop.ClipboardFormats;
+			
+			import weave.data.CSVParser;
+			import weave.utils.VectorUtils;
+			
+			private const p:int = 16;
+			
+			private function handleCreationComplete():void
+			{
+			}
+			
+			private var csvParser:CSVParser = new CSVParser();
+			
+			private function mergeHeaderRows():void
+			{
+				try
+				{
+					var table:Array = csvParser.parseCSV(acsInput.text);
+					if (table.length > 10)
+						table.length = 10;
+					var joined:Array = VectorUtils.joinItems(table, acsSeparator.text, false);
+					acsOutput.text = csvParser.createCSV([joined]);
+				}
+				catch (e:Error)
+				{
+					acsOutput.text = String(e);
+				}
+			}
+		]]>
+	</fx:Script>
+</s:Application>
