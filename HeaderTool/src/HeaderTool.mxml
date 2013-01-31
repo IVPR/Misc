@@ -2,21 +2,37 @@
 <s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
 			   xmlns:s="library://ns.adobe.com/flex/spark" 
 			   xmlns:mx="library://ns.adobe.com/flex/mx" minWidth="955" minHeight="600"
-			   pageTitle="Header Tool">
-	<s:VGroup width="100%" height="100%" paddingLeft="{p}" paddingRight="{p}" paddingTop="{p}" paddingBottom="{p}">
-		<s:Label text="Paste the header rows you want to combine."/>
-		<s:TextArea width="100%" height="100%" id="acsInput" change="mergeHeaderRows()"/>
-		<s:HGroup>
-			<s:Label text="Separator used when merging header rows:"/>
-			<s:TextInput id="acsSeparator" text=" - " change="mergeHeaderRows()"/>
-		</s:HGroup>
-		<s:HGroup>
-			<s:Label text="Merged header rows:"/>
-			<s:Spacer width="100%"/>
-			<s:Button label="Copy to clipboard" click="Clipboard.generalClipboard.setData(ClipboardFormats.TEXT_FORMAT, acsOutput.text);"/>
-		</s:HGroup>
-		<s:TextArea width="100%" height="100%" id="acsOutput"/>
-	</s:VGroup>
+			   pageTitle="IVPR Tools">
+	<mx:TabNavigator width="100%" height="100%">
+		<s:NavigatorContent label="Header Tool">
+			<s:VGroup width="100%" height="100%" paddingLeft="{p}" paddingRight="{p}" paddingTop="{p}" paddingBottom="{p}">
+				<s:Label text="Paste the header rows you want to combine."/>
+				<s:TextArea width="100%" height="100%" id="acsInput" change="mergeHeaderRows()"/>
+				<s:HGroup>
+					<s:Label text="Separator used when merging header rows:"/>
+					<s:TextInput id="acsSeparator" text=" - " change="mergeHeaderRows()"/>
+				</s:HGroup>
+				<s:HGroup>
+					<s:Label text="Merged header rows:"/>
+					<s:Spacer width="100%"/>
+					<s:Button label="Copy to clipboard" click="Clipboard.generalClipboard.setData(ClipboardFormats.TEXT_FORMAT, acsOutput.text);"/>
+				</s:HGroup>
+				<s:TextArea width="100%" height="100%" id="acsOutput"/>
+			</s:VGroup>
+		</s:NavigatorContent>
+		<s:NavigatorContent label="catalog.xml tool">
+			<s:VGroup width="100%" height="100%" paddingLeft="{p}" paddingRight="{p}" paddingTop="{p}" paddingBottom="{p}">
+				<s:Label text="Paste catalog.xml content below."/>
+				<s:TextArea height="100%" width="100%" id="catalogInput" change="catalogOutput.text = generateCatalogImports(catalogInput.text)"/>
+				<s:HGroup>
+					<s:Label text="ActionScript import statements:"/>
+					<s:Spacer width="100%"/>
+					<s:Button label="Copy to clipboard" click="Clipboard.generalClipboard.setData(ClipboardFormats.TEXT_FORMAT, catalogOutput.text);"/>
+				</s:HGroup>
+				<s:TextArea height="100%" width="100%" id="catalogOutput"/>
+			</s:VGroup>
+		</s:NavigatorContent>
+	</mx:TabNavigator>
 	<fx:Declarations>
 		<!-- Place non-visual elements (e.g., services, value objects) here -->
 	</fx:Declarations>
@@ -24,6 +40,8 @@
 		<![CDATA[
 			import flash.desktop.Clipboard;
 			import flash.desktop.ClipboardFormats;
+			
+			import mx.utils.StringUtil;
 			
 			import weave.data.CSVParser;
 			import weave.utils.VectorUtils;
@@ -50,6 +68,26 @@
 				{
 					acsOutput.text = String(e);
 				}
+			}
+			
+			private function generateCatalogImports(catalogXML:String):String
+			{
+				try
+				{
+					var def:QName = new QName("http://www.adobe.com/flash/swccatalog/9", "def");
+					var output:String = '';
+					for each (var qname:String in XML(catalogXML).descendants(def).@id)
+					{
+						var split:Array = qname.split(':');
+						output += StringUtil.substitute("import {0}; {1};\n", split.join('.'), split.pop());
+					}
+					return output;
+				}
+				catch (e:Error)
+				{
+					return String(e);
+				}
+				return null;
 			}
 		]]>
 	</fx:Script>
