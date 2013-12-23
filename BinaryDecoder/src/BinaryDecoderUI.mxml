@@ -4,9 +4,10 @@
 				xmlns:mx="library://ns.adobe.com/flex/mx"
 				creationComplete="init();"
 				width="100%" height="100%" xmlns:ui="weave.ui.*">
-	<mx:VBox width="100%" height="100%" >
+	<mx:VBox width="100%" height="100%">
 		<ui:CodeEditor id="editor"/>
 		<mx:HBox>
+			<mx:Button label="Load file" click="browse()"/>
 			<mx:Button label="Run script" click="validateScript()"/>
 			<ui:CustomCheckBox id="autorun" selected="true" label="Run script automatically"/>
 		</mx:HBox>
@@ -62,9 +63,18 @@
 			{
 			}
 			
-			private function loadFile(file:File, index:int, array:Array):void
+			private function browse():void
 			{
-				var file:File = files[index] as File;
+				var refs:FileReferenceList = new FileReferenceList();
+				refs.addEventListener(Event.SELECT, function(event:Event):void {
+					files = refs.fileList;
+					files.forEach(loadFile);
+				});
+				refs.browse();
+			}
+			
+			private function loadFile(file:FileReference, index:int, array:Array):void
+			{
 				file.addEventListener(ProgressEvent.PROGRESS, function(event:ProgressEvent):void {
 					output.text = lang('Loading {0}/{1} bytes ({2}%)',
 						event.bytesLoaded,
@@ -72,7 +82,7 @@
 						StandardLib.roundSignificant(100 * event.bytesLoaded / event.bytesTotal, 3));
 				});
 				file.addEventListener(Event.COMPLETE, function(event:Event):void {
-					for each (var file:File in files)
+					for each (var file:FileReference in files)
 						if (!file.data)
 							return;
 					if (autorun.selected)
@@ -82,14 +92,14 @@
 			}
 			
 			private var files:Array = null;
-			private function validateScript():void
+			private function validateScript(userInitiated:Boolean = false):void
 			{
 				try
 				{
 					output.text = '';
-					if (files)
+					if (files && (userInitiated || autorun.selected))
 					{
-						for each (var file:File in files)
+						for each (var file:FileReference in files)
 							output.text = script.call(null, file);
 					}
 					else
@@ -97,6 +107,7 @@
 				}
 				catch (e:Error)
 				{
+					trace(e.getStackTrace());
 					output.text = e.message;
 				}
 			}
