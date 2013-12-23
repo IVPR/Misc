@@ -52,7 +52,8 @@
 			}
 			private function doDragEnter(e:NativeDragEvent):void
 			{
-				NativeDragManager.acceptDragDrop(this);
+				if (e.clipboard.hasFormat(ClipboardFormats.FILE_LIST_FORMAT))
+					NativeDragManager.acceptDragDrop(this);
 			}
 			private function doDragDrop(event:NativeDragEvent):void
 			{
