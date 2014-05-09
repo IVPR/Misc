@@ -26,13 +26,16 @@
 			public const DEFAULT_SCRIPT:String = "\
 				function (file) {\n\
 					import 'mx.utils.ObjectUtil';\n\
+					import 'weave.utils.readZip';\n\
+					import 'weave.utils.writeZip';\n\
 					\n\
 					weaveTrace(ObjectUtil.toString(file));\n\
 					\n\
-					var data = file.data;\n\
+					var zip = readZip(file.data);\n\
 					\n\
-					data.position = 0;\n\
-					var result = data.readObject();\n\
+					var amf = zip['weave-amf/history.amf'];\n\
+					\n\
+					var result = amf.readObject();\n\
 					\n\
 					return ObjectUtil.toString(result);\n\
 				}\
