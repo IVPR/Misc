@@ -8,13 +8,11 @@
 	<fx:Script>
 		<![CDATA[
 			import weave.core.UIUtils;
-			import weave.ui.SessionStateEditor;
 		]]>
 	</fx:Script>
 	<s:applicationComplete>
 		<![CDATA[
 			UIUtils.spark_addChild(this, new BinaryDecoderUI());
-			SessionStateEditor.initialize;
 		]]>
 	</s:applicationComplete>
 </s:WindowedApplication>
