@@ -25,8 +25,8 @@
 			public const DEFAULT_SCRIPT:String = "\
 				function (file) {\n\
 					import 'mx.utils.ObjectUtil';\n\
-					import 'weave.utils.readZip';\n\
-					import 'weave.utils.writeZip';\n\
+					import 'weave.flascc.readZip';\n\
+					import 'weave.flascc.writeZip';\n\
 					\n\
 					weaveTrace(ObjectUtil.toString(file));\n\
 					\n\
