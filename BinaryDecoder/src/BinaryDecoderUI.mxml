@@ -8,8 +8,10 @@
 		<ui:CodeEditor id="editor"/>
 		<mx:HBox>
 			<mx:Button label="Load file" click="browse()"/>
-			<mx:Button label="Run script" click="validateScript()"/>
+			<mx:Button label="Run script" click="validateScript(true)"/>
 			<ui:CustomCheckBox id="autorun" selected="true" label="Run script automatically"/>
+			<mx:Button label="Save output" click="validateScript(true, true);" enabled="{arrayNotEmpty(files)}"
+					   toolTip="Saves the return value from the function to a file."/>
 		</mx:HBox>
 	</mx:VBox>
 	<s:TextArea id="output" width="100%" height="100%"/>
@@ -91,11 +93,16 @@
 					if (autorun.selected)
 						validateScript();
 				});
-				file.load()
+				file.load();
 			}
 			
-			private var files:Array = null;
-			private function validateScript(userInitiated:Boolean = false):void
+			private function arrayNotEmpty(array:Array):Boolean
+			{
+				return array && array.length;
+			}
+			
+			[Bindable] private var files:Array = null;
+			private function validateScript(userInitiated:Boolean = false, save:Boolean = false):void
 			{
 				try
 				{
@@ -103,7 +110,34 @@
 					if (files && (userInitiated || autorun.selected))
 					{
 						for each (var file:FileReference in files)
-							output.text = script.call(null, file);
+						{
+							file.data.position = 0;
+							var result:* = script.call(null, file);
+							if (save)
+							{
+								var fileName:String;
+								if (result is ByteArray)
+								{
+									fileName = file.name;
+								}
+								else if (typeof result == 'object')
+								{
+									var amfBytes:ByteArray = new ByteArray();
+									amfBytes.writeObject(result);
+									result = amfBytes;
+									fileName = file.name + '.amf';
+								}
+								else
+								{
+									fileName = file.name + '.txt';
+								}
+								
+								new FileReference().save(result, fileName);
+								output.text = "Saving " + fileName;
+							}
+							else
+								output.text = result;
+						}
 					}
 					else
 						script.validate();
