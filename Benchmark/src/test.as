@@ -13,6 +13,7 @@ private var columns:Array;
 
 public function init():void
 {
+	trace(Capabilities.version, Capabilities.playerType, Capabilities.isDebugger ? 'debugger' : '');
 	var len:int = new Vector.<int>(0x1FFFFFF).length;
 	getDefinitionByName('flash.system.System')['gc']();
 	trace('ready', len);
@@ -21,12 +22,6 @@ public function init():void
 
 public function initArray(keyLength:int):void
 {
-//	if (Capabilities.isDebugger)
-//	{
-//		trace('please run in non-debugger');
-//		return;
-//	}
-	
 	var padding:String = '_________________________';
 	//var padding:String = 'FFFFFFFFFFFFFFFFFFFFFFFFF';
 	a = new Array(n).map(function(o:*, i:int, a:*):*{
