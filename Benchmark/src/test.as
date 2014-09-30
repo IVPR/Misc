@@ -5,6 +5,8 @@ import flash.system.Capabilities;
 import flash.system.System;
 import flash.utils.Dictionary;
 
+import weave.flascc.stringHash;
+
 private var t:Number;
 private var i:int;
 private var n:int = 0x10000;
@@ -45,7 +47,8 @@ public function test():void
 	var record:Object;
 	
 	//for each (var keyLength:int in [0,1,2,3,4,0,1,2,3,4,0,1,2,3,4])
-	for each (var keyLength:int in [4,3,2,1,0])
+	//for each (var keyLength:int in [4,3,2,1,0])
+	for each (var keyLength:int in [3,2,4,1,0])
 	//for each (var keyLength:int in [12,11,10,9,8,7,6,5,4,-4,-5,-6,-7,-8,-9,-10,-11,-12])
 	//for each (var keyLength:int in [0,1,2,3,4,5,6,7,8,9,10,11,12,13])
 	{
@@ -136,6 +139,21 @@ private function testDictionary():Object
 {
 	System.gc();
 	var result:Object = {};
+	
+	try
+	{
+		t = new Date().time;
+		for (i = 0; i < n; ++i)
+		{
+			weave.flascc.stringHash(a[i]);
+		}
+		result['0:hash'] = new Date().time - t;
+	}
+	catch (e:Error)
+	{
+		trace('failed on', a[i]);
+		throw e;
+	}
 	
 	d = new Dictionary();
 	t = new Date().time;
