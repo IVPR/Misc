@@ -17,6 +17,7 @@ private var h:IntHashTable;
 private var hSize:int = 1024;
 private var keyLength:int = 0;
 private var a:Array;
+private var a2:Array;
 private var v:*;
 private var columns:Array;
 
@@ -41,6 +42,7 @@ public function initArray(keyLength:int):void
 			return (padding + hex).substr(keyLength);
 		return (hex + padding).substr(0, keyLength);
 	});
+	a2 = a.map(function(v:*, k:*, a:*):* { return {v: v}; });
 }
 
 public function test():void
@@ -65,6 +67,9 @@ public function test():void
 		printRecord(testDictionary());
 		
 		//printRecord(testHashTable());
+		
+		a = a2;
+		printRecord(testDictionary(true));
 	}
 }
 
@@ -87,7 +92,7 @@ private function testStringHash(Type:Object):Object
 {
 	System.gc();
 	var result:Object = {};
-	result['0:class'] = 'H-' + (getQualifiedClassName(Type).split("::").pop() as String).substr(0, 3);
+	result['0:class'] = (getQualifiedClassName(Type).split("::").pop() as String).substr(0, 3) + '[h]';
 	
 	d = new Type();
 	d.length = 0xFFFFFF; // note: insufficient for production code
@@ -192,11 +197,11 @@ private function testStringHashLengthChecking(Type:Object):Object
 	return result;
 }
 
-private function testDictionary():Object
+private function testDictionary(objectKeys:Boolean = false):Object
 {
 	System.gc();
 	var result:Object = {};
-	result['0:class'] = (getQualifiedClassName(Dictionary).split("::").pop() as String).substr(0, 3);
+	result['0:class'] = (getQualifiedClassName(Dictionary).split("::").pop() as String).substr(0, 3) + (objectKeys ? '[o]' : '');
 	
 	d = new Dictionary();
 	t = new Date().time;
