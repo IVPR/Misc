@@ -1,0 +1,37 @@
+using one function call per qkey
+
+Before stringHash():
+processed 305902 qkeys in 9790 ms
+processed 305902 qkeys in 6944 ms
+processed 305902 qkeys in 6860 ms
+processed 305902 qkeys in 6833 ms
+processed 305902 qkeys in 6901 ms
+processed 305902 qkeys in 6878 ms
+
+After stringHash():
+processed 305902 qkeys in 3718 ms
+processed 305902 qkeys in 1093 ms
+processed 305902 qkeys in 1106 ms
+processed 305902 qkeys in 1088 ms
+processed 305902 qkeys in 1083 ms
+processed 305902 qkeys in 1088 ms
+
+-------------------------------------------
+
+using batched retrieval
+
+Before stringHash():
+processed 305902 qkeys in 7681 ms
+processed 305902 qkeys in 6340 ms
+processed 305902 qkeys in 6185 ms
+processed 305902 qkeys in 6130 ms
+processed 305902 qkeys in 6192 ms
+processed 305902 qkeys in 6253 ms
+
+After stringHash():
+processed 305902 qkeys in 1732 ms
+processed 305902 qkeys in 564 ms
+processed 305902 qkeys in 557 ms
+processed 305902 qkeys in 565 ms
+processed 305902 qkeys in 565 ms
+processed 305902 qkeys in 565 ms
