@@ -135,7 +135,7 @@ private function testDictionary():Object
 	t = new Date().time;
 	for (i = 0; i < n; ++i)
 	{
-		d[weave.flascc.stringHash(a[i])];
+		d[a[i]];
 	}
 	result['1:miss1'] = new Date().time - t;
 	
