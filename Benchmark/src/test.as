@@ -5,10 +5,11 @@ import de.polygonal.ds.IntHashTable;
 import flash.system.Capabilities;
 import flash.system.System;
 import flash.utils.Dictionary;
+import flash.utils.getTimer;
 
 import weave.flascc.stringHash;
 
-private var t:Number;
+private var t:int;
 private var i:int;
 private var n:int = 0x10000;
 private var numDigits:int = 4;
@@ -27,6 +28,7 @@ public function init():void
 	var len:int = new Vector.<int>(0x1FFFFFF).length;
 	System.gc();
 	trace('ready', len);
+	//testTimer();
 	test();
 }
 
@@ -96,42 +98,42 @@ private function testStringHash(Type:Object):Object
 	
 	d = new Type();
 	d.length = 0xFFFFFF; // note: insufficient for production code
-	t = new Date().time;
+	t = getTimer();
 	for (i = 0; i < n; ++i)
 	{
 		d[weave.flascc.stringHash(a[i])];
 	}
-	t = new Date().time - t;
+	t = getTimer() - t;
 	result['1:miss1'] = t;
 	
 	d = new Type();
 	d.length = 0xFFFFFF; // note: insufficient for production code
-	t = new Date().time;
+	t = getTimer();
 	for (i = 0; i < n; ++i)
 	{
 		d[weave.flascc.stringHash(a[i])];
 	}
-	t = new Date().time - t;
+	t = getTimer() - t;
 	result['2:miss2'] = t;
 	
 	d = new Type();
 	d.length = 0xFFFFFF; // note: insufficient for production code
-	t = new Date().time;
+	t = getTimer();
 	for (i = 0; i < n; ++i)
 	{
 		d[weave.flascc.stringHash(a[i])] = Type;
 	}
-	t = new Date().time - t;
+	t = getTimer() - t;
 	result['3:set'] = t;
 	
 	//d = new Type();
 	//d.length = 0xFFFFFF; // note: insufficient for production code
-	t = new Date().time;
+	t = getTimer();
 	for (i = 0; i < n; ++i)
 	{
 		v = d[weave.flascc.stringHash(a[i])];
 	}
-	t = new Date().time - t;
+	t = getTimer() - t;
 	result['4:get'] = t;
 	
 	return result;
@@ -147,7 +149,7 @@ private function testStringHashLengthChecking(Type:Object):Object
 	var hash:int;
 	
 	d = new Type();
-	t = new Date().time;
+	t = getTimer();
 	for (i = 0; i < n; ++i)
 	{
 		hash = weave.flascc.stringHash(a[i]);
@@ -155,11 +157,11 @@ private function testStringHashLengthChecking(Type:Object):Object
 			d.length = hash + 1;
 		d[hash];
 	}
-	t = new Date().time - t;
+	t = getTimer() - t;
 	result['1:miss1'] = t;
 	
 	d = new Type();
-	t = new Date().time;
+	t = getTimer();
 	for (i = 0; i < n; ++i)
 	{
 		hash = weave.flascc.stringHash(a[i]);
@@ -167,11 +169,11 @@ private function testStringHashLengthChecking(Type:Object):Object
 			d.length = hash + 1;
 		d[hash];
 	}
-	t = new Date().time - t;
+	t = getTimer() - t;
 	result['2:miss2'] = t;
 	
 	d = new Type();
-	t = new Date().time;
+	t = getTimer();
 	for (i = 0; i < n; ++i)
 	{
 		hash = weave.flascc.stringHash(a[i]);
@@ -179,11 +181,11 @@ private function testStringHashLengthChecking(Type:Object):Object
 			d.length = hash + 1;
 		d[hash] = Type;
 	}
-	t = new Date().time - t;
+	t = getTimer() - t;
 	result['3:set'] = t;
 	
 	//d = new Type();
-	t = new Date().time;
+	t = getTimer();
 	for (i = 0; i < n; ++i)
 	{
 		hash = weave.flascc.stringHash(a[i]);
@@ -191,7 +193,7 @@ private function testStringHashLengthChecking(Type:Object):Object
 			d.length = hash + 1;
 		v = d[hash];
 	}
-	t = new Date().time - t;
+	t = getTimer() - t;
 	result['4:get'] = t;
 	
 	return result;
@@ -204,36 +206,36 @@ private function testDictionary(objectKeys:Boolean = false):Object
 	result['0:class'] = (getQualifiedClassName(Dictionary).split("::").pop() as String).substr(0, 3) + (objectKeys ? '[o]' : '');
 	
 	d = new Dictionary();
-	t = new Date().time;
+	t = getTimer();
 	for (i = 0; i < n; ++i)
 	{
 		d[a[i]];
 	}
-	result['1:miss1'] = new Date().time - t;
+	result['1:miss1'] = getTimer() - t;
 	
 	d = new Dictionary();
-	t = new Date().time;
+	t = getTimer();
 	for (i = 0; i < n; ++i)
 	{
 		d[a[i]];
 	}
-	result['2:miss2'] = new Date().time - t;
+	result['2:miss2'] = getTimer() - t;
 	
 	d = new Dictionary();
-	t = new Date().time;
+	t = getTimer();
 	for (i = 0; i < n; ++i)
 	{
 		d[a[i]] = 1234;
 	}
-	result['3:set'] = new Date().time - t;
+	result['3:set'] = getTimer() - t;
 	
 	//d = new Dictionary();
-	t = new Date().time;
+	t = getTimer();
 	for (i = 0; i < n; ++i)
 	{
 		v = d[a[i]];
 	}
-	result['4:get'] = new Date().time - t;
+	result['4:get'] = getTimer() - t;
 	
 	return result;
 }
@@ -258,36 +260,67 @@ private function testHashTable():Object
 	result['0:class'] = (getQualifiedClassName(IntHashTable).split("::").pop() as String).substr(0, 6);
 	
 	newHashTable();
-	t = new Date().time;
+	t = getTimer();
 	for (i = 0; i < n; ++i)
 	{
 		h.get(i);
 	}
-	result['1:miss1'] = new Date().time - t;
+	result['1:miss1'] = getTimer() - t;
 	
 	newHashTable();
-	t = new Date().time;
+	t = getTimer();
 	for (i = 0; i < n; ++i)
 	{
 		h.get(i);
 	}
-	result['2:miss2'] = new Date().time - t;
+	result['2:miss2'] = getTimer() - t;
 	
 	newHashTable();
-	t = new Date().time;
+	t = getTimer();
 	for (i = 0; i < n; ++i)
 	{
 		h.setIfAbsent(i, result);
 	}
-	result['3:set'] = new Date().time - t;
+	result['3:set'] = getTimer() - t;
 	
 	//newHashTable();
-	t = new Date().time;
+	t = getTimer();
 	for (i = 0; i < n; ++i)
 	{
 		v = h.get(i);
 	}
-	result['4:get'] = new Date().time - t;
+	result['4:get'] = getTimer() - t;
 	
 	return result;
+}
+
+// getTimer() gives better performance than new Date().time. There is no way to test which gives better accuracy.
+private function testTimer():void
+{
+	var I:int;
+	var N:Number;
+	
+	t = getTimer();
+	for (i = 0; i < n; ++i)
+		I = new Date().time;
+	t = getTimer() - t;
+	trace(t,'ms','var I:int = new Date().time;');
+	
+	t = getTimer();
+	for (i = 0; i < n; ++i)
+		N = new Date().time;
+	t = getTimer() - t;
+	trace(t,'ms','var N:Number = new Date().time;');
+	
+	t = getTimer();
+	for (i = 0; i < n; ++i)
+		I = getTimer();
+	t = getTimer() - t;
+	trace(t,'ms','var I:int = getTimer();');
+	
+	t = getTimer();
+	for (i = 0; i < n; ++i)
+		N = getTimer();
+	t = getTimer() - t;
+	trace(t,'ms','var N:Number = getTimer();');
 }
