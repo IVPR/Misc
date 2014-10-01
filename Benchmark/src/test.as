@@ -1,4 +1,5 @@
-import de.polygonal.ds.HashKey;
+import avmplus.getQualifiedClassName;
+
 import de.polygonal.ds.IntHashTable;
 
 import flash.system.Capabilities;
@@ -11,7 +12,7 @@ private var t:Number;
 private var i:int;
 private var n:int = 0x10000;
 private var numDigits:int = 4;
-private var d:Dictionary;
+private var d:*;
 private var h:IntHashTable;
 private var hSize:int = 1024;
 private var keyLength:int = 0;
@@ -34,7 +35,7 @@ public function initArray(keyLength:int):void
 	//var padding:String = 'FFFFFFFFFFFFFFFFFFFFFFFFF';
 	a = new Array(n).map(function(o:*, i:int, a:*):*{
 		var hex:String = ('00000000000' + i.toString(16)).substr(-numDigits);
-		return (padding.substr(0, keyLength) + hex.split('').join('') + padding).substr(0, 8);
+		//return (padding.substr(0, keyLength) + hex.split('').join('') + padding).substr(0, 8);
 		
 		if (keyLength < 0)
 			return (padding + hex).substr(keyLength);
@@ -47,32 +48,29 @@ public function test():void
 	var records:Array = [];
 	var record:Object;
 	
-	for each (var keyLength:int in [4,3,2,1,0,0,1,2,3,4,4,3,2,1,0,0,1,2,3,4,4,3,2,1,0,0,1,2,3,4,4,3,2,1,0,0,1,2,3,4,4,3,2,1,0,0,1,2,3,4])
-	//for each (var keyLength:int in [0,1,2,3,4,0,1,2,3,4,0,1,2,3,4])
+	//for each (var keyLength:int in [4,3,2,1,0,0,1,2,3,4,4,3,2,1,0,0,1,2,3,4,4,3,2,1,0,0,1,2,3,4,4,3,2,1,0,0,1,2,3,4,4,3,2,1,0,0,1,2,3,4])
+	//for each (var keyLength:int in [0,1,2,3,4,0,1,2,3,4,0,1,2,3,4,0,1,2,3,4])
 	//for each (var keyLength:int in [4,3,2,1,0])
 	//for each (var keyLength:int in [3,3,2,4,1,0])
-	//for each (var keyLength:int in [12,11,10,9,8,7,6,5,4,-4,-5,-6,-7,-8,-9,-10,-11,-12])
+	for each (var keyLength:int in [12,11,10,9,8,7,6,5,4,-4,-5,-6,-7,-8,-9,-10,-11,-12])
 	//for each (var keyLength:int in [0,1,2,3,4,5,6,7,8,9,10,11,12,13])
 	{
 		initArray(keyLength);
-		var pattern:String = a[a.length-1];
 		
-		record = testDictionary();
-		//record['Class'] = 'Dict';
-		record['pattern'] = pattern;
-		//record['0:length'] = keyLength;
-		printRecord(record);
+		printRecord(testStringHash(Object));
+//		printRecord(testStringHash(Dictionary));
+//		printRecord(testStringHash(Array));
+//		printRecord(testStringHash(Vector.<Object>));
 		
-//		record = testHashTable();
-//		record['Class'] = 'IntHM';
-//		record['pattern'] = pattern;
-//		record['0:length'] = keyLength;
-//		printRecord(record);
+		printRecord(testDictionary());
+		
+		//printRecord(testHashTable());
 	}
 }
 
 private function printRecord(record:Object):void
 {
+	record['pattern'] = a[a.length - 1];
 	if (!columns)
 	{
 		columns = [];
@@ -85,51 +83,120 @@ private function printRecord(record:Object):void
 	trace(columns.map(function(column:String, ..._):* { return record[column]; }).join('\t'));
 }
 
-private function testDictionary():Object
+private function testStringHash(Type:Object):Object
 {
 	System.gc();
 	var result:Object = {};
+	result['0:class'] = 'H-' + (getQualifiedClassName(Type).split("::").pop() as String).substr(0, 3);
 	
-	/*
-	t = new Date().time;
-	for (i = 0; i < n; ++i)
-	{
-		weave.flascc.stringHash(a[i]);
-	}
-	result['h0:hash'] = new Date().time - t;
-	*/
-	
-	d = new Dictionary();
+	d = new Type();
+	d.length = 0xFFFFFF; // note: insufficient for production code
 	t = new Date().time;
 	for (i = 0; i < n; ++i)
 	{
 		d[weave.flascc.stringHash(a[i])];
 	}
-	result['h1:hmiss1'] = new Date().time - t;
+	t = new Date().time - t;
+	result['1:miss1'] = t;
 	
-	d = new Dictionary();
+	d = new Type();
+	d.length = 0xFFFFFF; // note: insufficient for production code
 	t = new Date().time;
 	for (i = 0; i < n; ++i)
 	{
 		d[weave.flascc.stringHash(a[i])];
 	}
-	result['h2:hmiss2'] = new Date().time - t;
+	t = new Date().time - t;
+	result['2:miss2'] = t;
 	
-	d = new Dictionary();
+	d = new Type();
+	d.length = 0xFFFFFF; // note: insufficient for production code
 	t = new Date().time;
 	for (i = 0; i < n; ++i)
 	{
-		d[weave.flascc.stringHash(a[i])] = 1234;
+		d[weave.flascc.stringHash(a[i])] = Type;
 	}
-	result['h3:hset'] = new Date().time - t;
+	t = new Date().time - t;
+	result['3:set'] = t;
 	
-	//d = new Dictionary();
+	//d = new Type();
+	//d.length = 0xFFFFFF; // note: insufficient for production code
 	t = new Date().time;
 	for (i = 0; i < n; ++i)
 	{
 		v = d[weave.flascc.stringHash(a[i])];
 	}
-	result['h4:hget'] = new Date().time - t;
+	t = new Date().time - t;
+	result['4:get'] = t;
+	
+	return result;
+}
+
+// added length checking is much slower
+private function testStringHashLengthChecking(Type:Object):Object
+{
+	System.gc();
+	var result:Object = {};
+	result['0:class'] = 'L-' + (getQualifiedClassName(Type).split("::").pop() as String).substr(0, 3);
+	
+	var hash:int;
+	
+	d = new Type();
+	t = new Date().time;
+	for (i = 0; i < n; ++i)
+	{
+		hash = weave.flascc.stringHash(a[i]);
+		if (d.length <= hash)
+			d.length = hash + 1;
+		d[hash];
+	}
+	t = new Date().time - t;
+	result['1:miss1'] = t;
+	
+	d = new Type();
+	t = new Date().time;
+	for (i = 0; i < n; ++i)
+	{
+		hash = weave.flascc.stringHash(a[i]);
+		if (d.length <= hash)
+			d.length = hash + 1;
+		d[hash];
+	}
+	t = new Date().time - t;
+	result['2:miss2'] = t;
+	
+	d = new Type();
+	t = new Date().time;
+	for (i = 0; i < n; ++i)
+	{
+		hash = weave.flascc.stringHash(a[i]);
+		if (d.length <= hash)
+			d.length = hash + 1;
+		d[hash] = Type;
+	}
+	t = new Date().time - t;
+	result['3:set'] = t;
+	
+	//d = new Type();
+	t = new Date().time;
+	for (i = 0; i < n; ++i)
+	{
+		hash = weave.flascc.stringHash(a[i]);
+		if (d.length <= hash)
+			d.length = hash + 1;
+		v = d[hash];
+	}
+	t = new Date().time - t;
+	result['4:get'] = t;
+	
+	return result;
+}
+
+private function testDictionary():Object
+{
+	System.gc();
+	var result:Object = {};
+	result['0:class'] = (getQualifiedClassName(Dictionary).split("::").pop() as String).substr(0, 3);
 	
 	d = new Dictionary();
 	t = new Date().time;
@@ -178,10 +245,12 @@ private function newHashTable():void
 	h = new IntHashTable(hSize);
 }
 
+// too slow
 private function testHashTable():Object
 {
 	System.gc();
 	var result:Object = {};
+	result['0:class'] = (getQualifiedClassName(IntHashTable).split("::").pop() as String).substr(0, 6);
 	
 	newHashTable();
 	t = new Date().time;
