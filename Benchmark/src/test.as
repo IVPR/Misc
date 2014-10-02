@@ -25,9 +25,6 @@ private var columns:Array;
 public function init():void
 {
 	trace(Capabilities.version, Capabilities.playerType, Capabilities.isDebugger ? 'debugger' : '');
-	var len:int = new Vector.<int>(0x1FFFFFF).length;
-	System.gc();
-	trace('ready', len);
 	//testTimer();
 	test();
 }
@@ -70,8 +67,8 @@ public function test():void
 		
 		//printRecord(testHashTable());
 		
-		a = a2;
-		printRecord(testDictionary(true));
+//		a = a2;
+//		printRecord(testDictionary(true));
 	}
 }
 
@@ -88,6 +85,47 @@ private function printRecord(record:Object):void
 	}
 	//var stats:String = '\t' + Math.round(100*System.freeMemory/System.totalMemory)+'%';
 	trace(columns.map(function(column:String, ..._):* { return record[column]; }).join('\t'));
+}
+
+private function testDictionary(objectKeys:Boolean = false):Object
+{
+	System.gc();
+	var result:Object = {};
+	result['0:class'] = (getQualifiedClassName(Dictionary).split("::").pop() as String).substr(0, 3) + (objectKeys ? '[o]' : '');
+	
+	d = new Dictionary();
+	t = getTimer();
+	for (i = 0; i < n; ++i)
+	{
+		d[a[i]];
+	}
+	result['1:miss1'] = getTimer() - t;
+	
+	d = new Dictionary();
+	t = getTimer();
+	for (i = 0; i < n; ++i)
+	{
+		d[a[i]];
+	}
+	result['2:miss2'] = getTimer() - t;
+	
+	d = new Dictionary();
+	t = getTimer();
+	for (i = 0; i < n; ++i)
+	{
+		d[a[i]] = 1234;
+	}
+	result['3:set'] = getTimer() - t;
+	
+	//d = new Dictionary();
+	t = getTimer();
+	for (i = 0; i < n; ++i)
+	{
+		v = d[a[i]];
+	}
+	result['4:get'] = getTimer() - t;
+	
+	return result;
 }
 
 private function testStringHash(Type:Object):Object
@@ -199,47 +237,6 @@ private function testStringHashLengthChecking(Type:Object):Object
 	return result;
 }
 
-private function testDictionary(objectKeys:Boolean = false):Object
-{
-	System.gc();
-	var result:Object = {};
-	result['0:class'] = (getQualifiedClassName(Dictionary).split("::").pop() as String).substr(0, 3) + (objectKeys ? '[o]' : '');
-	
-	d = new Dictionary();
-	t = getTimer();
-	for (i = 0; i < n; ++i)
-	{
-		d[a[i]];
-	}
-	result['1:miss1'] = getTimer() - t;
-	
-	d = new Dictionary();
-	t = getTimer();
-	for (i = 0; i < n; ++i)
-	{
-		d[a[i]];
-	}
-	result['2:miss2'] = getTimer() - t;
-	
-	d = new Dictionary();
-	t = getTimer();
-	for (i = 0; i < n; ++i)
-	{
-		d[a[i]] = 1234;
-	}
-	result['3:set'] = getTimer() - t;
-	
-	//d = new Dictionary();
-	t = getTimer();
-	for (i = 0; i < n; ++i)
-	{
-		v = d[a[i]];
-	}
-	result['4:get'] = getTimer() - t;
-	
-	return result;
-}
-
 private function newHashTable():void
 {
 	if (h)
@@ -294,7 +291,7 @@ private function testHashTable():Object
 	return result;
 }
 
-// getTimer() gives better performance than new Date().time. There is no way to test which gives better accuracy.
+// getTimer() gives better performance than new Date().time.
 private function testTimer():void
 {
 	var I:int;
