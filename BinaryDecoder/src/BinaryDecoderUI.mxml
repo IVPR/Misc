@@ -12,11 +12,20 @@
 			<ui:CustomCheckBox id="autorun" selected="true" label="Run script automatically"/>
 			<mx:Button label="Save output" click="validateScript(true, true);" enabled="{arrayNotEmpty(files)}"
 					   toolTip="Saves the return value from the function to a file."/>
+			<ui:HelpComponent>
+				var file:FileReference
+				function output(result:Object):void
+				function curl(url:String):AsyncToken
+			</ui:HelpComponent>
 		</mx:HBox>
 	</mx:VBox>
 	<s:TextArea id="output" width="100%" height="100%"/>
 	<fx:Script>
 		<![CDATA[
+			import mx.rpc.AsyncToken;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			
 			import weave.api.linkBindableProperty;
 			import weave.api.registerLinkableChild;
 			import weave.compiler.ProxyObject;
@@ -24,6 +33,7 @@
 			import weave.core.LinkableFunction;
 			import weave.core.UIUtils;
 			import weave.core.WeaveXMLDecoder;
+			import weave.services.addAsyncResponder;
 			
 			public const script:LinkableFunction = registerLinkableChild(WeaveAPI.globalHashMap, new LinkableFunction(DEFAULT_SCRIPT, false, true, ['file']), validateScript);
 			public const DEFAULT_SCRIPT:String = "\
@@ -43,14 +53,36 @@
 					return ObjectUtil.toString(result);\n\
 				}\
 			";
-			private const classLookup:ProxyObject = new ProxyObject(getClassDef, getClassDef, null);
-			private function getClassDef(className:String):Object
+			
+			private function runScript(file:FileReference, save:Boolean):*
 			{
-				className = WeaveXMLDecoder.getClassName(className);
-				try {
-					return getDefinitionByName(className);
-				} catch (e:Error) { }
-				return null;
+				var output:* = undefined;
+				function lookup(name:String):Object
+				{
+					if (name == 'file')
+						return file;
+					if (name == 'curl')
+						return curl as Function;
+					if (name == 'output')
+						return function(result:Object):void {
+							saveResult(output = result, save ? file : null);
+						};
+					
+					name = WeaveXMLDecoder.getClassName(name);
+					try {
+						return getDefinitionByName(name);
+					} catch (e:Error) { }
+					return null;
+				}
+				var result:Object = script.call(new ProxyObject(lookup, lookup, null), file);
+				if (output !== undefined)
+					result = output;
+				return result;
+			}
+			
+			private function curl(url:String):AsyncToken
+			{
+				return WeaveAPI.URLRequestUtils.getURL(null, new URLRequest(url));
 			}
 
 			private function init():void
@@ -99,7 +131,7 @@
 				});
 				file.addEventListener(Event.COMPLETE, function(event:Event):void {
 					for each (var file:FileReference in files)
-						if (!file.data)
+						if (file && !file.data)
 							return;
 					if (autorun.selected)
 						validateScript();
@@ -118,36 +150,17 @@
 				try
 				{
 					output.text = '';
-					if (files && (userInitiated || autorun.selected))
+					if (userInitiated && !files)
+						files = [null];
+					if (files && autorun.selected)
 					{
 						for each (var file:FileReference in files)
 						{
-							file.data.position = 0;
-							var result:* = script.call(classLookup, file);
-							if (save)
-							{
-								var fileName:String;
-								if (result is ByteArray)
-								{
-									fileName = file.name;
-								}
-								else if (typeof result == 'object')
-								{
-									var amfBytes:ByteArray = new ByteArray();
-									amfBytes.writeObject(result);
-									result = amfBytes;
-									fileName = file.name + '.amf';
-								}
-								else
-								{
-									fileName = file.name + '.txt';
-								}
-								
-								new FileReference().save(result, fileName);
-								output.text = "Saving " + fileName;
-							}
-							else
-								output.text = result;
+							if (file)
+								file.data.position = 0;
+							var result:* = runScript(file, save);
+							if (result != undefined)
+								saveResult(result, save ? file : null);
 						}
 					}
 					else
@@ -159,6 +172,50 @@
 					output.text = e.message;
 				}
 			}
+			
+			/**
+			 * @param result The script result.
+			 * @param file The input file. If this parameter is given, the script result will be saved to a new file.
+			 */
+			private function saveResult(result:Object, file:FileReference):void
+			{
+				if (result is ResultEvent)
+					result = (result as ResultEvent).result;
+				if (result is FaultEvent)
+					result = (result as FaultEvent).fault;
+				if (result is AsyncToken)
+				{
+					addAsyncResponder(result as AsyncToken, saveResult, saveResult, file);
+					return;
+				}
+				
+				if (!file)
+				{
+					output.text = String(result);
+					return;
+				}
+				
+				var fileName:String;
+				if (result is ByteArray)
+				{
+					fileName = file.name;
+				}
+				else if (typeof result == 'object')
+				{
+					var amfBytes:ByteArray = new ByteArray();
+					amfBytes.writeObject(result);
+					result = amfBytes;
+					fileName = file.name + '.amf';
+				}
+				else
+				{
+					fileName = file.name + '.txt';
+				}
+				
+				new FileReference().save(result, fileName);
+				output.text = "Saving " + fileName;
+			}
+
 		]]>
 	</fx:Script>
 </mx:VDividedBox>
