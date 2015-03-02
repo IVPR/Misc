@@ -26,33 +26,48 @@
 			import mx.rpc.events.FaultEvent;
 			import mx.rpc.events.ResultEvent;
 			
+			import weave.api.getCallbackCollection;
 			import weave.api.linkBindableProperty;
-			import weave.api.registerLinkableChild;
 			import weave.compiler.ProxyObject;
 			import weave.compiler.StandardLib;
-			import weave.core.LinkableFunction;
+			import weave.core.LinkableString;
 			import weave.core.UIUtils;
 			import weave.core.WeaveXMLDecoder;
 			import weave.services.addAsyncResponder;
+			import weave.utils.ConsoleEngine;
 			
-			public const script:LinkableFunction = registerLinkableChild(WeaveAPI.globalHashMap, new LinkableFunction(DEFAULT_SCRIPT, false, true, ['file']), validateScript);
-			public const DEFAULT_SCRIPT:String = "\
-				function (file) {\n\
-					import 'mx.utils.ObjectUtil';\n\
-					import 'weave.flascc.readZip';\n\
-					import 'weave.flascc.writeZip';\n\
-					\n\
-					weaveTrace(ObjectUtil.toString(file));\n\
-					\n\
-					var zip = readZip(file.data);\n\
-					\n\
-					var amf = zip['weave-amf/history.amf'];\n\
-					\n\
-					var result = amf.readObject();\n\
-					\n\
-					return ObjectUtil.toString(result);\n\
-				}\
-			";
+			private function init():void
+			{
+				UIUtils.drawInvisiblePolygon(this);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER, doDragEnter);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP, doDragDrop);
+				addEventListener(NativeDragEvent.NATIVE_DRAG_EXIT, doDragExit);
+				
+				getCallbackCollection(WeaveAPI.ErrorManager).addImmediateCallback(this, handleError);
+				
+				script.value = DEFAULT_SCRIPT;
+				linkBindableProperty(script, editor, 'text', 500);
+				script.addImmediateCallback(null, validateScript);
+			}
+			
+			public const engine:ConsoleEngine = new ConsoleEngine();
+			
+			public const script:LinkableString = WeaveAPI.globalHashMap.requestObject('script', LinkableString, true);
+			public const DEFAULT_SCRIPT:String = StandardLib.unIndent("\
+				import 'mx.utils.ObjectUtil';\n\
+				import 'weave.flascc.readZip';\n\
+				import 'weave.flascc.writeZip';\n\
+				\n\
+				weaveTrace(ObjectUtil.toString(file));\n\
+				\n\
+				var zip = readZip(file.data);\n\
+				\n\
+				var amf = zip['weave-amf/history.amf'];\n\
+				\n\
+				var result = amf.readObject();\n\
+				\n\
+				return ObjectUtil.toString(result);\n\
+			");
 			
 			private function runScript(file:FileReference, save:Boolean):*
 			{
@@ -74,7 +89,9 @@
 					} catch (e:Error) { }
 					return null;
 				}
-				var result:Object = script.call(new ProxyObject(lookup, lookup, null), file);
+				
+				engine.context = new ProxyObject(lookup, lookup, null);
+				var result:Object = engine.runCommand(script.value);
 				if (output !== undefined)
 					result = output;
 				return result;
@@ -85,18 +102,6 @@
 				return WeaveAPI.URLRequestUtils.getURL(null, new URLRequest(url));
 			}
 
-			private function init():void
-			{
-				UIUtils.drawInvisiblePolygon(this);
-				
-				WeaveAPI.globalHashMap;
-				
-				linkBindableProperty(script, editor, 'text', 500);
-				
-				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER, doDragEnter);
-				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP, doDragDrop);
-				addEventListener(NativeDragEvent.NATIVE_DRAG_EXIT, doDragExit);
-			}
 			private function doDragEnter(e:NativeDragEvent):void
 			{
 				if (e.clipboard.hasFormat(ClipboardFormats.FILE_LIST_FORMAT))
@@ -164,7 +169,7 @@
 						}
 					}
 					else
-						script.validate();
+						engine.compiler.compileToObject(script.value);
 				}
 				catch (e:Error)
 				{
@@ -215,7 +220,11 @@
 				new FileReference().save(result, fileName);
 				output.text = "Saving " + fileName;
 			}
-
+			
+			private function handleError():void
+			{
+				output.text = WeaveAPI.ErrorManager.errors[WeaveAPI.ErrorManager.errors.length - 1];
+			}
 		]]>
 	</fx:Script>
 </mx:VDividedBox>
