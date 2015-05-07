@@ -12,7 +12,7 @@
 	</fx:Script>
 	<s:applicationComplete>
 		<![CDATA[
-			UIUtils.spark_addChild(this, new BinaryDecoderUI());
+			UIUtils.spark_addChild(this, new WeaveScriptMonkeyUI());
 		]]>
 	</s:applicationComplete>
 </s:WindowedApplication>

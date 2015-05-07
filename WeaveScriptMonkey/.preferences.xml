@@ -4,7 +4,7 @@
     <source-folders/>
   </sf.eclipse.odt.core.builder.stores.SourcePaths>
   <sf.eclipse.odt.core.builder.stores.BinaryPaths>
-    <binary-folder>/BinaryDecoder/bin</binary-folder>
+    <binary-folder>/WeaveScriptMonkey/bin</binary-folder>
   </sf.eclipse.odt.core.builder.stores.BinaryPaths>
   <sf.eclipse.odt.core.builder.stores.BuilderConfigurationStore>
     <builder-configurations>
