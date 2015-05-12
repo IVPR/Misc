@@ -2,8 +2,9 @@
 <mx:VDividedBox xmlns:fx="http://ns.adobe.com/mxml/2009" 
 				xmlns:s="library://ns.adobe.com/flex/spark" 
 				xmlns:mx="library://ns.adobe.com/flex/mx"
-				creationComplete="init();"
-				width="100%" height="100%" xmlns:ui="weave.ui.*">
+				creationPolicy="all"
+				implements="weave.api.core.ILinkableObject"
+				width="100%" height="100%" xmlns:ui="weave.ui.*" xmlns:local="*">
 	<mx:VBox width="100%" height="100%">
 		<ui:CodeEditor id="editor"/>
 		<mx:HBox>
@@ -19,25 +20,57 @@
 			</ui:HelpComponent>
 		</mx:HBox>
 	</mx:VBox>
-	<s:TextArea id="output" width="100%" height="100%"/>
+	
+	<mx:TabNavigator id="tabs" width="100%" height="100%" paddingTop="0" selectedIndex="{isPrimitive(output) ? 0 : 1}">
+		<mx:VBox label="Text view" width="100%" height="100%">
+			<mx:TextArea id="textView" editable="false" width="100%" height="100%" text="{output}" borderStyle="none"/>
+		</mx:VBox>
+		<mx:Canvas label="Object view">
+			<ui:WeaveTree id="treeView" width="100%" height="100%"
+						  showRoot="true" borderStyle="none"
+						  dataProvider="{newTreeNode(output)}">
+				<ui:itemRenderer>
+					<fx:Component>
+						<local:CustomTreeItemRenderer secondLabelFunction="{outerDocument.getSecondLabel}"
+													  secondLabelX="{outerDocument.rightDiv.x}"/>
+					</fx:Component>
+				</ui:itemRenderer>
+			</ui:WeaveTree>
+			<mx:HDividedBox width="100%" height="100%">
+				<s:Spacer id="leftDiv" width="100%"/>
+				<s:Spacer id="rightDiv" width="100%"/>
+			</mx:HDividedBox>
+		</mx:Canvas>
+	</mx:TabNavigator>
 	<fx:Script>
 		<![CDATA[
+			import avmplus.DescribeType;
+			import avmplus.getQualifiedClassName;
+			
 			import mx.rpc.AsyncToken;
 			import mx.rpc.events.FaultEvent;
 			import mx.rpc.events.ResultEvent;
 			
+			import weave.api.core.DynamicState;
 			import weave.api.getCallbackCollection;
 			import weave.api.linkBindableProperty;
+			import weave.api.reportError;
 			import weave.compiler.ProxyObject;
 			import weave.compiler.StandardLib;
 			import weave.core.LinkableString;
 			import weave.core.UIUtils;
 			import weave.core.WeaveXMLDecoder;
+			import weave.data.hierarchy.WeaveTreeDescriptorNode;
 			import weave.services.addAsyncResponder;
+			import weave.ui.WeaveTreeDescriptor;
 			import weave.utils.ConsoleEngine;
+			import weave.utils.VectorUtils;
 			
-			private function init():void
+			override protected function childrenCreated():void
 			{
+				super.childrenCreated();
+				
+				treeView.enableClickToExpand();
 				UIUtils.drawInvisiblePolygon(this);
 				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER, doDragEnter);
 				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP, doDragDrop);
@@ -50,11 +83,13 @@
 				script.addImmediateCallback(null, validateScript);
 			}
 			
+			[Bindable] private var output:*;
+			
 			public const engine:ConsoleEngine = new ConsoleEngine();
 			
 			public const script:LinkableString = WeaveAPI.globalHashMap.requestObject('script', LinkableString, true);
-			public const DEFAULT_SCRIPT:String = StandardLib.unIndent("\
-				import 'mx.utils.ObjectUtil';\n\
+			public const DEFAULT_SCRIPT:String = "return new WeaveArchive(file.data);";
+			public const DEFAULT_SCRIPT_OLD:String = StandardLib.unIndent("\
 				import 'weave.flascc.readZip';\n\
 				import 'weave.flascc.writeZip';\n\
 				\n\
@@ -66,12 +101,12 @@
 				\n\
 				var result = amf.readObject();\n\
 				\n\
-				return ObjectUtil.toString(result);\n\
+				return Compiler.stringify(result, null, 3);\n\
 			");
 			
 			private function runScript(file:FileReference, save:Boolean):*
 			{
-				var output:* = undefined;
+				output = undefined;
 				function lookup(name:String):Object
 				{
 					if (name == 'file')
@@ -91,10 +126,10 @@
 				}
 				
 				engine.context = new ProxyObject(lookup, lookup, null);
-				var result:Object = engine.runCommand(script.value);
-				if (output !== undefined)
-					result = output;
-				return result;
+				var runCommandResult:Object = engine.runCommand(script.value);
+				if (output === undefined)
+					output = runCommandResult;
+				return output;
 			}
 			
 			private function curl(url:String):AsyncToken
@@ -129,7 +164,7 @@
 			private function loadFile(file:FileReference, index:int, array:Array):void
 			{
 				file.addEventListener(ProgressEvent.PROGRESS, function(event:ProgressEvent):void {
-					output.text = lang('Loading {0}/{1} bytes ({2}%)',
+					textView.text = lang('Loading {0}/{1} bytes ({2}%)',
 						event.bytesLoaded,
 						event.bytesTotal,
 						StandardLib.roundSignificant(100 * event.bytesLoaded / event.bytesTotal, 3));
@@ -154,7 +189,7 @@
 			{
 				try
 				{
-					output.text = '';
+					textView.text = '';
 					if (userInitiated && !files)
 						files = [null];
 					if (files && autorun.selected)
@@ -174,7 +209,7 @@
 				catch (e:Error)
 				{
 					trace(e.getStackTrace());
-					output.text = e.message;
+					textView.text = e.message;
 				}
 			}
 			
@@ -196,7 +231,7 @@
 				
 				if (!file)
 				{
-					output.text = String(result);
+					textView.text = String(result);
 					return;
 				}
 				
@@ -218,12 +253,102 @@
 				}
 				
 				new FileReference().save(result, fileName);
-				output.text = "Saving " + fileName;
+				textView.text = "Saving " + fileName;
 			}
 			
 			private function handleError():void
 			{
-				output.text = WeaveAPI.ErrorManager.errors[WeaveAPI.ErrorManager.errors.length - 1];
+				textView.text = WeaveAPI.ErrorManager.errors[WeaveAPI.ErrorManager.errors.length - 1];
+			}
+			
+			private const MAX_LABEL_LENGTH:int = 256;
+			private function getLabel(node:WeaveTreeDescriptorNode):String
+			{
+				var value:* = node.data[0];
+				var key:* = node.data[1];
+				
+				var label:String = key;
+				if (label && label.length > MAX_LABEL_LENGTH)
+					label = String(label).substr(0, MAX_LABEL_LENGTH - 3) + '...';
+				
+				var className:String = getQualifiedClassName(node.data[0]);
+				
+				return (label ? label + " : " : "") + className;
+			}
+			
+			private function newTreeNode(value:*, key:String = null, _:* = null):WeaveTreeDescriptorNode
+			{
+				var hasChildren:Boolean;
+				if (value is Array && (value as Array).length == 0)
+					hasChildren = false;
+				else
+					hasChildren = !isPrimitive(value);
+				
+				return new WeaveTreeDescriptorNode({
+					label: getLabel,
+					data: [value, key],
+					children: hasChildren ? getChildNodes : null,
+					dependency: this
+				});
+			}
+			private function isPrimitive(value:*):Boolean
+			{
+				return !value || typeof value != 'object';
+			}
+			private function getChildNodes(node:WeaveTreeDescriptorNode):Array
+			{
+				var value:* = node.data[0];
+				var key:* = node.data[1];
+				
+				if (value is Array)
+					return (value as Array).map(newTreeNode);
+				
+				var keys:Array = VectorUtils.getKeys(value);
+				if (!keys.length && getQualifiedClassName(value) != 'Object')
+				{
+					for each (var list:Array in DescribeType.getInfo(value, DescribeType.ACCESSOR_FLAGS | DescribeType.VARIABLE_FLAGS)['traits'])
+						for each (var item:Object in list)
+							if (item.access != 'writeonly')
+								keys.push(item.uri ? new QName(item.uri, item.name) : item.name);
+				}
+				keys.sort();
+				
+				var children:Array = [];
+				for each (var childKey:* in keys)
+				{
+					var childValue:*;
+					try {
+						childValue = value[childKey];
+					} catch (e:Error) {
+						childValue = e;
+					}
+					
+					children.push(newTreeNode(childValue, childKey));
+				}
+				return children;
+			}
+			public function getSecondLabel(node:WeaveTreeDescriptorNode):String
+			{
+				var value:* = node.data[0];
+				var key:* = node.data[1];
+				
+				var detail:String = '';
+				if (isPrimitive(value))
+				{
+					detail = value;
+				}
+				else if (DynamicState.isDynamicState(value))
+				{
+					detail = (value[DynamicState.CLASS_NAME] as String).split('::').pop();
+					if (value[DynamicState.OBJECT_NAME])
+						detail += lang(' "{0}"', value[DynamicState.OBJECT_NAME]);
+				}
+				else if (value is Array)
+				{
+					detail = "length = " + (value as Array).length;
+				}
+				
+				return detail;
 			}
 		]]>
 	</fx:Script>

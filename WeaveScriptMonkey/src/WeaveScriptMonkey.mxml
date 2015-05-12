@@ -4,7 +4,7 @@
 					   xmlns:mx="library://ns.adobe.com/flex/mx"
 					   xmlns:local="*"
 					   showStatusBar="false"
-					   width="500" height="800">
+					   width="640" height="800">
 	<fx:Script>
 		<![CDATA[
 			import weave.core.UIUtils;
