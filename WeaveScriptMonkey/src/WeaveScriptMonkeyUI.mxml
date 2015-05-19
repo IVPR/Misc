@@ -21,26 +21,11 @@
 		</mx:HBox>
 	</mx:VBox>
 	
-	<mx:TabNavigator id="tabs" width="100%" height="100%" paddingTop="0" selectedIndex="{isPrimitive(output) ? 0 : 1}">
+	<mx:TabNavigator id="tabs" width="100%" height="100%" paddingTop="0" selectedIndex="{(!output || typeof output != 'object') ? 0 : 1}">
 		<mx:VBox label="Text view" width="100%" height="100%">
 			<mx:TextArea id="textView" editable="false" width="100%" height="100%" text="{output}" borderStyle="none"/>
 		</mx:VBox>
-		<mx:Canvas label="Object view">
-			<ui:WeaveTree id="treeView" width="100%" height="100%"
-						  showRoot="true" borderStyle="none"
-						  dataProvider="{newTreeNode(output)}">
-				<ui:itemRenderer>
-					<fx:Component>
-						<local:CustomTreeItemRenderer secondLabelFunction="{outerDocument.getSecondLabel}"
-													  secondLabelX="{outerDocument.rightDiv.x}"/>
-					</fx:Component>
-				</ui:itemRenderer>
-			</ui:WeaveTree>
-			<mx:HDividedBox width="100%" height="100%">
-				<s:Spacer id="leftDiv" width="100%"/>
-				<s:Spacer id="rightDiv" width="100%"/>
-			</mx:HDividedBox>
-		</mx:Canvas>
+		<ui:ObjectViewer id="treeView" label="Object view" data="{output}"/>
 	</mx:TabNavigator>
 	<fx:Script>
 		<![CDATA[
@@ -70,7 +55,6 @@
 			{
 				super.childrenCreated();
 				
-				treeView.enableClickToExpand();
 				UIUtils.drawInvisiblePolygon(this);
 				addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER, doDragEnter);
 				addEventListener(NativeDragEvent.NATIVE_DRAG_DROP, doDragDrop);
@@ -259,98 +243,6 @@
 			private function handleError():void
 			{
 				textView.text = WeaveAPI.ErrorManager.errors[WeaveAPI.ErrorManager.errors.length - 1];
-			}
-			
-			private const MAX_LABEL_LENGTH:int = 256;
-			private function getLabel(node:WeaveTreeDescriptorNode):String
-			{
-				var value:* = node.data[0];
-				var key:* = node.data[1];
-				
-				var label:String = key;
-				if (label && label.length > MAX_LABEL_LENGTH)
-					label = String(label).substr(0, MAX_LABEL_LENGTH - 3) + '...';
-				
-				var className:String = getQualifiedClassName(node.data[0]);
-				
-				return (label ? label + " : " : "") + className;
-			}
-			
-			private function newTreeNode(value:*, key:String = null, _:* = null):WeaveTreeDescriptorNode
-			{
-				var hasChildren:Boolean;
-				if (value is Array && (value as Array).length == 0)
-					hasChildren = false;
-				else
-					hasChildren = !isPrimitive(value);
-				
-				return new WeaveTreeDescriptorNode({
-					label: getLabel,
-					data: [value, key],
-					children: hasChildren ? getChildNodes : null,
-					dependency: this
-				});
-			}
-			private function isPrimitive(value:*):Boolean
-			{
-				return !value || typeof value != 'object';
-			}
-			private function getChildNodes(node:WeaveTreeDescriptorNode):Array
-			{
-				var value:* = node.data[0];
-				var key:* = node.data[1];
-				
-				if (value is Array)
-					return (value as Array).map(newTreeNode);
-				
-				var keys:Array = VectorUtils.getKeys(value);
-				if (!keys.length && getQualifiedClassName(value) != 'Object')
-				{
-					for each (var list:Array in DescribeType.getInfo(value, DescribeType.ACCESSOR_FLAGS | DescribeType.VARIABLE_FLAGS)['traits'])
-						for each (var item:Object in list)
-							if (item.access != 'writeonly')
-								keys.push(item.uri ? new QName(item.uri, item.name) : item.name);
-				}
-				keys.sort();
-				
-				var children:Array = [];
-				for each (var childKey:* in keys)
-				{
-					var childValue:*;
-					try {
-						childValue = value[childKey];
-					} catch (e:Error) {
-						childValue = e;
-					}
-					
-					children.push(newTreeNode(childValue, childKey));
-				}
-				return children;
-			}
-			public function getSecondLabel(node:WeaveTreeDescriptorNode):String
-			{
-				var value:* = node.data[0];
-				var key:* = node.data[1];
-				
-				var detail:String = '';
-				if (isPrimitive(value))
-				{
-					detail = value;
-				}
-				else if (DynamicState.isDynamicState(value))
-				{
-					var className:String = String(value[DynamicState.CLASS_NAME]); // null -> "null"
-					var objectName:String = value[DynamicState.OBJECT_NAME];
-					detail = className.split('::').pop();
-					if (objectName)
-						detail += lang(' "{0}"', objectName);
-				}
-				else if (value is Array)
-				{
-					detail = "length = " + (value as Array).length;
-				}
-				
-				return detail;
 			}
 		]]>
 	</fx:Script>
