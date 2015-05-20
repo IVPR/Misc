@@ -15,7 +15,9 @@
 					   toolTip="Saves the return value from the function to a file."/>
 			<ui:HelpComponent>
 				var file:FileReference
+				
 				function output(result:Object):void
+				
 				function curl(url:String):AsyncToken
 			</ui:HelpComponent>
 		</mx:HBox>
@@ -50,6 +52,7 @@
 			import weave.ui.WeaveTreeDescriptor;
 			import weave.utils.ConsoleEngine;
 			import weave.utils.VectorUtils;
+			import weave.utils.WeavePromise;
 			
 			override protected function childrenCreated():void
 			{
@@ -99,7 +102,7 @@
 						return curl as Function;
 					if (name == 'output')
 						return function(result:Object):void {
-							saveResult(output = result, save ? file : null);
+							saveResult(result, save ? file : null);
 						};
 					
 					name = WeaveXMLDecoder.getClassName(name);
@@ -203,6 +206,7 @@
 			 */
 			private function saveResult(result:Object, file:FileReference):void
 			{
+				output = result;
 				if (result is ResultEvent)
 					result = (result as ResultEvent).result;
 				if (result is FaultEvent)
@@ -210,6 +214,14 @@
 				if (result is AsyncToken)
 				{
 					addAsyncResponder(result as AsyncToken, saveResult, saveResult, file);
+					return;
+				}
+				if (result is WeavePromise)
+				{
+					function handlePromiseResult(result:Object):void {
+						saveResult(result, file);
+					}
+					(result as WeavePromise).then(handlePromiseResult, handlePromiseResult);
 					return;
 				}
 				
