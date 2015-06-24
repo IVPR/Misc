@@ -18,7 +18,7 @@
 				
 				function output(result:Object):void
 				
-				function curl(url:String):AsyncToken
+				function curl(url:String):WeavePromise
 			</ui:HelpComponent>
 		</mx:HBox>
 	</mx:VBox>
@@ -119,9 +119,12 @@
 				return output;
 			}
 			
-			private function curl(url:String):AsyncToken
+			private function curl(url:String):WeavePromise
 			{
-				return WeaveAPI.URLRequestUtils.getURL(null, new URLRequest(url));
+				return new WeavePromise(null)
+					.then(function(o:*):* {
+						return WeaveAPI.URLRequestUtils.getURL(null, new URLRequest(url));
+					});
 			}
 
 			private function doDragEnter(e:NativeDragEvent):void
