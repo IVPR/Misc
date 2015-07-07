@@ -75,7 +75,11 @@
 			public const engine:ConsoleEngine = new ConsoleEngine();
 			
 			public const script:LinkableString = WeaveAPI.globalHashMap.requestObject('script', LinkableString, true);
-			public const DEFAULT_SCRIPT:String = "return new WeaveArchive(file.data);";
+			public const DEFAULT_SCRIPT:String = StandardLib.unIndent("\
+				var archive = new WeaveArchive(file.data);\n\
+				var state = archive.objects['history.amf'].currentState;\n\
+				return archive;\n\
+			");
 			public const DEFAULT_SCRIPT_OLD:String = StandardLib.unIndent("\
 				import 'weave.flascc.readZip';\n\
 				import 'weave.flascc.writeZip';\n\
