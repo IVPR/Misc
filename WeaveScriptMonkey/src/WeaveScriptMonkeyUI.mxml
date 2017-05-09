@@ -13,6 +13,7 @@
 			<ui:CustomCheckBox id="autorun" selected="true" label="Run script automatically"/>
 			<mx:Button label="Save output" click="validateScript(true, true);" enabled="{arrayNotEmpty(files)}"
 					   toolTip="Saves the return value from the function to a file."/>
+			<ui:CustomCheckBox id="json" selected="false" label="Save objects as JSON"/>
 			<ui:HelpComponent>
 				var file:FileReference
 				
@@ -25,7 +26,7 @@
 	
 	<mx:TabNavigator id="tabs" width="100%" height="100%" paddingTop="0" selectedIndex="{(!output || typeof output != 'object') ? 0 : 1}">
 		<mx:VBox label="Text view" width="100%" height="100%">
-			<mx:TextArea id="textView" editable="false" width="100%" height="100%" text="{tryToString(output)}" borderStyle="none"/>
+			<mx:TextArea id="textView" editable="false" width="100%" height="100%" text="{truncate(output)}" borderStyle="none"/>
 		</mx:VBox>
 		<ui:ObjectViewer id="treeView" label="Object view" data="{output}"/>
 	</mx:TabNavigator>
@@ -38,8 +39,11 @@
 			import weave.api.getCallbackCollection;
 			import weave.api.linkBindableProperty;
 			import weave.api.core.ILinkableObject;
+			import weave.api.reportError;
+			import weave.compiler.Compiler;
 			import weave.compiler.ProxyObject;
 			import weave.compiler.StandardLib;
+			import weave.core.ClassUtils;
 			import weave.core.LinkableString;
 			import weave.core.UIUtils;
 			import weave.core.WeaveXMLDecoder;
@@ -88,11 +92,15 @@
 				return Compiler.stringify(result, null, 3);\n\
 			");
 			
-			private function tryToString(obj:Object):String
+			private function truncate(value:String):String
 			{
 				try
 				{
-					return String(obj);
+					var max:int = 10240;
+					var text:String = String(value);
+					if (text.length > max)
+						text = text.substr(0, max) + '...';
+					return text;
 				}
 				catch (e:Error)
 				{
@@ -251,10 +259,19 @@
 				}
 				else if (typeof result == 'object')
 				{
-					var amfBytes:ByteArray = new ByteArray();
-					amfBytes.writeObject(result);
-					result = amfBytes;
-					fileName = file.name + '.amf';
+					if (json.selected)
+					{
+						var JSON:* = ClassUtils.getClassDefinition('JSON') || {stringify: Compiler.stringify};
+						result = JSON.stringify(result, null, '\t');
+						fileName = file.name + '.json';
+					}
+					else
+					{
+						var amfBytes:ByteArray = new ByteArray();
+						amfBytes.writeObject(result);
+						result = amfBytes;
+						fileName = file.name + '.amf';
+					}
 				}
 				else
 				{
